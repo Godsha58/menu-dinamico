@@ -73,12 +73,10 @@ function CartRow({
 }
 
 function PaymentMethodButton({
-  id,
   title,
   selected,
   onSelect,
 }: {
-  id: "tarjeta" | "paypal";
   title: string;
   selected: boolean;
   onSelect: () => void;
@@ -227,13 +225,11 @@ export function CartSidebar() {
             <div className="flex-1 overflow-auto px-4 pb-32">
               <div className="space-y-3">
                 <PaymentMethodButton
-                  id="tarjeta"
                   title="Tarjeta"
                   selected={paymentMethod === "tarjeta"}
                   onSelect={() => setPaymentMethod("tarjeta")}
                 />
                 <PaymentMethodButton
-                  id="paypal"
                   title="PayPal"
                   selected={paymentMethod === "paypal"}
                   onSelect={() => setPaymentMethod("paypal")}

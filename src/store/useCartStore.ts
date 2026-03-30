@@ -138,6 +138,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "webcai-cart",
+      skipHydration: true,
       partialize: (s) => ({
         itemsById: s.itemsById,
         lastReceipt: s.lastReceipt,

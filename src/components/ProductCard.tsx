@@ -6,8 +6,6 @@ import { Plus } from "lucide-react";
 import { ProductImage } from "@/components/ProductImage";
 
 export function ProductCard({ product }: { product: MenuProduct }) {
-  const add = useCartStore((s) => s.add);
-
   return (
     <article className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
       <div className="flex items-center gap-3">
@@ -26,7 +24,7 @@ export function ProductCard({ product }: { product: MenuProduct }) {
             <button
               type="button"
               aria-label={`Agregar ${product.name} al carrito`}
-              onClick={() => add(product)}
+              onClick={() => useCartStore.getState().add(product)}
               className="grid size-9 shrink-0 place-items-center rounded-xl bg-webcai-red text-white shadow-sm active:scale-[0.98]"
             >
               <Plus className="size-5" />

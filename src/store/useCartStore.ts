@@ -37,9 +37,6 @@ type CartState = {
   clearCart: () => void;
   clearAll: () => void;
 
-  getItems: () => CartLine[];
-  getCount: () => number;
-  getTotal: () => number;
   createReceiptFromCart: (method: "tarjeta" | "paypal") => Receipt;
   setReceipt: (receipt: Receipt) => void;
 };
@@ -119,10 +116,6 @@ export const useCartStore = create<CartState>()(
       clearCart: () => set({ itemsById: {}, step: "cart" }),
       clearAll: () => set({ itemsById: {}, step: "cart", lastReceipt: null }),
 
-      getItems: () => Object.values(get().itemsById),
-      getCount: () =>
-        Object.values(get().itemsById).reduce((sum, l) => sum + l.qty, 0),
-      getTotal: () => calcTotal(Object.values(get().itemsById)),
       createReceiptFromCart: (method) => {
         const items = Object.values(get().itemsById);
         const total = calcTotal(items);

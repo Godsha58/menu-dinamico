@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CreditCard, Loader2, Trash2, X } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { useCartStore } from "@/store/useCartStore";
 import { cn } from "@/components/ui/cn";
 import { formatCurrencyMXN } from "@/components/ui/format";
@@ -19,10 +20,6 @@ function CartRow({
   price: number;
   qty: number;
 }) {
-  const inc = useCartStore((s) => s.inc);
-  const dec = useCartStore((s) => s.dec);
-  const remove = useCartStore((s) => s.remove);
-
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-3">
       <div className="flex items-start justify-between gap-3">
@@ -39,7 +36,7 @@ function CartRow({
           <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => dec(id)}
+              onClick={() => useCartStore.getState().dec(id)}
               className="grid size-9 place-items-center rounded-xl border border-zinc-200 bg-white text-zinc-800 active:scale-[0.98]"
               aria-label={`Disminuir ${name}`}
             >
@@ -50,7 +47,7 @@ function CartRow({
             </div>
             <button
               type="button"
-              onClick={() => inc(id)}
+              onClick={() => useCartStore.getState().inc(id)}
               className="grid size-9 place-items-center rounded-xl border border-zinc-200 bg-white text-zinc-800 active:scale-[0.98]"
               aria-label={`Aumentar ${name}`}
             >
@@ -61,7 +58,7 @@ function CartRow({
 
         <button
           type="button"
-          onClick={() => remove(id)}
+          onClick={() => useCartStore.getState().remove(id)}
           className="grid size-10 shrink-0 place-items-center rounded-xl bg-zinc-100 text-webcai-red active:scale-[0.98]"
           aria-label={`Eliminar ${name}`}
         >
@@ -107,19 +104,19 @@ function PaymentMethodButton({
 export function CartSidebar() {
   const router = useRouter();
 
-  const isOpen = useCartStore((s) => s.isCartOpen);
-  const closeCart = useCartStore((s) => s.closeCart);
-  const step = useCartStore((s) => s.step);
-  const goToCart = useCartStore((s) => s.goToCart);
-  const goToCheckout = useCartStore((s) => s.goToCheckout);
-  const paymentMethod = useCartStore((s) => s.paymentMethod);
-  const setPaymentMethod = useCartStore((s) => s.setPaymentMethod);
-
-  const items = useCartStore((s) => s.getItems());
-  const total = useCartStore((s) => s.getTotal());
-  const createReceipt = useCartStore((s) => s.createReceiptFromCart);
-  const setReceipt = useCartStore((s) => s.setReceipt);
-  const clearCart = useCartStore((s) => s.clearCart);
+  const { isOpen, step, paymentMethod, itemsById } = useCartStore(
+    useShallow((s) => ({
+      isOpen: s.isCartOpen,
+      step: s.step,
+      paymentMethod: s.paymentMethod,
+      itemsById: s.itemsById,
+    })),
+  );
+  const items = useMemo(() => Object.values(itemsById), [itemsById]);
+  const total = useMemo(
+    () => items.reduce((sum, l) => sum + l.price * l.qty, 0),
+    [items],
+  );
 
   const [isPaying, setIsPaying] = useState(false);
   const [cardName, setCardName] = useState("");
@@ -133,20 +130,21 @@ export function CartSidebar() {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") closeCart();
+      if (e.key === "Escape") useCartStore.getState().closeCart();
     }
     if (isOpen) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isOpen, closeCart]);
+  }, [isOpen]);
 
   async function payNow() {
     if (!items.length || isPaying) return;
     setIsPaying(true);
     await new Promise((r) => setTimeout(r, 2000));
-    const receipt = createReceipt(paymentMethod);
-    setReceipt(receipt);
-    clearCart();
-    closeCart();
+    const st = useCartStore.getState();
+    const receipt = st.createReceiptFromCart(paymentMethod);
+    st.setReceipt(receipt);
+    st.clearCart();
+    st.closeCart();
     setIsPaying(false);
     router.push(`/recibo/${receipt.orderId}`);
   }
@@ -158,7 +156,7 @@ export function CartSidebar() {
       <button
         type="button"
         className="absolute inset-0 bg-black/35"
-        onClick={closeCart}
+        onClick={() => useCartStore.getState().closeCart()}
         aria-label="Cerrar"
       />
 
@@ -176,7 +174,7 @@ export function CartSidebar() {
               </div>
               <button
                 type="button"
-                onClick={closeCart}
+                onClick={() => useCartStore.getState().closeCart()}
                 className="grid size-10 place-items-center rounded-xl bg-zinc-100 text-zinc-800 active:scale-[0.98]"
                 aria-label="Cerrar"
               >
@@ -188,7 +186,7 @@ export function CartSidebar() {
               <div className="px-4 pb-3 pt-3">
                 <button
                   type="button"
-                  onClick={goToCart}
+                  onClick={() => useCartStore.getState().goToCart()}
                   className="text-sm font-semibold text-zinc-700 underline decoration-zinc-300 underline-offset-4"
                 >
                   Volver al carrito
@@ -227,12 +225,12 @@ export function CartSidebar() {
                 <PaymentMethodButton
                   title="Tarjeta"
                   selected={paymentMethod === "tarjeta"}
-                  onSelect={() => setPaymentMethod("tarjeta")}
+                  onSelect={() => useCartStore.getState().setPaymentMethod("tarjeta")}
                 />
                 <PaymentMethodButton
                   title="PayPal"
                   selected={paymentMethod === "paypal"}
-                  onSelect={() => setPaymentMethod("paypal")}
+                  onSelect={() => useCartStore.getState().setPaymentMethod("paypal")}
                 />
 
                 <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
@@ -317,7 +315,7 @@ export function CartSidebar() {
               {step === "cart" ? (
                 <button
                   type="button"
-                  onClick={goToCheckout}
+                  onClick={() => useCartStore.getState().goToCheckout()}
                   disabled={!items.length}
                   className={cn(
                     "mt-3 h-12 w-full rounded-2xl bg-webcai-red text-sm font-bold text-white shadow-sm active:scale-[0.99]",
@@ -348,7 +346,7 @@ export function CartSidebar() {
                   </button>
                   <button
                     type="button"
-                    onClick={closeCart}
+                    onClick={() => useCartStore.getState().closeCart()}
                     className="h-12 w-full rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-900 active:scale-[0.99]"
                   >
                     Aceptar

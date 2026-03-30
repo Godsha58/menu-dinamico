@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Header } from "@/components/Header";
 import { ProductCard } from "@/components/ProductCard";
 import { CartSidebar } from "@/components/CartSidebar";
@@ -13,9 +14,10 @@ type SectionBlock = {
 };
 
 export function HomeMenuClient({ sections }: { sections: SectionBlock[] }) {
-  const openCart = useCartStore((s) => s.openCart);
-  const itemCount = useCartStore((s) =>
-    Object.values(s.itemsById).reduce((acc, line) => acc + line.qty, 0),
+  const itemsById = useCartStore((s) => s.itemsById);
+  const itemCount = useMemo(
+    () => Object.values(itemsById).reduce((acc, line) => acc + line.qty, 0),
+    [itemsById],
   );
 
   return (
@@ -40,7 +42,7 @@ export function HomeMenuClient({ sections }: { sections: SectionBlock[] }) {
       <div className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-md px-4 pb-4">
         <button
           type="button"
-          onClick={openCart}
+          onClick={() => useCartStore.getState().openCart()}
           className="mx-auto flex h-14 w-full max-w-[220px] items-center justify-center gap-2 rounded-2xl bg-webcai-red text-lg font-extrabold text-white shadow-xl active:scale-[0.99]"
         >
           <ShoppingCart className="size-5" />

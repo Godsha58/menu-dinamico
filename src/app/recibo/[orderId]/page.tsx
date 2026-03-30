@@ -12,7 +12,6 @@ export default function ReceiptPage() {
   const orderIdFromRoute = params?.orderId ?? "";
 
   const receipt = useCartStore((s) => s.lastReceipt);
-  const clearAll = useCartStore((s) => s.clearAll);
 
   const safeOrderId = useMemo(() => {
     if (receipt?.orderId) return receipt.orderId;
@@ -78,7 +77,7 @@ export default function ReceiptPage() {
 
         <Link
           href="/"
-          onClick={clearAll}
+          onClick={() => useCartStore.getState().clearAll()}
           className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-webcai-red text-sm font-bold text-white shadow-sm"
         >
           Volver al Inicio

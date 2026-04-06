@@ -1,55 +1,33 @@
 "use client";
 
-import {
-  Beef,
-  CircleDot,
-  GlassWater,
-  Popcorn,
-  Shrimp,
-} from "lucide-react";
+import Image from "next/image";
 import type { MenuProduct } from "@/data/menu";
 
-const base =
-  "grid size-[4.5rem] shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white shadow-md";
+const productImageSrc: Record<MenuProduct["imageKey"], string> = {
+  "bola-pollo": "/products/bola-pollo.png",
+  "bola-camaron": "/products/bola-camaron.png",
+  "bola-res": "/products/bola-res.png",
+  papas: "/products/papas.png",
+  aros: "/products/aros.png",
+  refresco: "/products/refresco.png",
+};
+
+const frameClass =
+  "relative size-[4.5rem] shrink-0 overflow-hidden rounded-full border-2 border-white shadow-md bg-zinc-100";
 
 export function ProductImage({ product }: { product: MenuProduct }) {
-  switch (product.imageKey) {
-    case "bola-pollo":
-      return (
-        <div className={`${base} bg-gradient-to-br from-orange-50 to-amber-100`}>
-          <CircleDot className="size-8 text-[#FF5700]" strokeWidth={1.75} />
-        </div>
-      );
-    case "bola-camaron":
-      return (
-        <div className={`${base} bg-gradient-to-br from-sky-50 to-orange-50`}>
-          <Shrimp className="size-8 text-[#FF5700]" strokeWidth={1.75} />
-        </div>
-      );
-    case "bola-res":
-      return (
-        <div className={`${base} bg-gradient-to-br from-rose-50 to-orange-50`}>
-          <Beef className="size-8 text-[#FF5700]" strokeWidth={1.75} />
-        </div>
-      );
-    case "papas":
-      return (
-        <div className={`${base} bg-gradient-to-br from-amber-50 to-yellow-100`}>
-          <Popcorn className="size-8 text-amber-700" strokeWidth={1.75} />
-        </div>
-      );
-    case "aros":
-      return (
-        <div className={`${base} bg-gradient-to-br from-violet-50 to-orange-50`}>
-          <CircleDot className="size-8 text-violet-600" strokeWidth={1.75} />
-        </div>
-      );
-    case "refresco":
-    default:
-      return (
-        <div className={`${base} bg-gradient-to-br from-cyan-50 to-orange-50`}>
-          <GlassWater className="size-8 text-cyan-600" strokeWidth={1.75} />
-        </div>
-      );
-  }
+  const src = productImageSrc[product.imageKey];
+
+  return (
+    <div className={frameClass}>
+      <Image
+        src={src}
+        alt={product.name}
+        fill
+        className="object-cover"
+        sizes="72px"
+        priority={false}
+      />
+    </div>
+  );
 }

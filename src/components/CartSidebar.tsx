@@ -160,8 +160,8 @@ export function CartSidebar() {
         aria-label="Cerrar"
       />
 
-      <aside className="absolute right-0 top-0 h-full w-[92vw] max-w-md bg-zinc-50 shadow-2xl">
-        <div className="flex h-full flex-col">
+      <aside className="absolute right-0 top-0 flex h-full w-[92vw] max-w-md flex-col bg-zinc-50 shadow-2xl">
+        <div className="flex min-h-0 flex-1 flex-col">
           <div className="border-b border-zinc-200 bg-white">
             <div className="flex items-center justify-between px-4 pt-4">
               <div className="leading-tight">
@@ -202,7 +202,7 @@ export function CartSidebar() {
           </div>
 
           {step === "cart" ? (
-            <div className="flex-1 space-y-3 overflow-auto px-4 pb-28">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain px-4 pb-[max(11rem,env(safe-area-inset-bottom,0px)+9.5rem)]">
               {items.map((l) => (
                 <CartRow
                   key={l.lineId}
@@ -220,8 +220,8 @@ export function CartSidebar() {
               ) : null}
             </div>
           ) : (
-            <div className="flex-1 overflow-auto px-4 pb-32">
-              <div className="space-y-3">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-[max(15rem,env(safe-area-inset-bottom,0px)+13.5rem)]">
+              <div className="space-y-3 pb-2">
                 <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                   <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Total a pagar

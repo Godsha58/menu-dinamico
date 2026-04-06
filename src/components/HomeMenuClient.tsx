@@ -5,8 +5,8 @@ import { Header } from "@/components/Header";
 import { ProductCard } from "@/components/ProductCard";
 import { CartSidebar } from "@/components/CartSidebar";
 import type { MenuProduct, MenuSection } from "@/data/menu";
-import { ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
+import { formatCurrencyMXN } from "@/components/ui/format";
 
 type SectionBlock = {
   section: MenuSection;
@@ -15,9 +15,14 @@ type SectionBlock = {
 
 export function HomeMenuClient({ sections }: { sections: SectionBlock[] }) {
   const itemsById = useCartStore((s) => s.itemsById);
+  const items = useMemo(() => Object.values(itemsById), [itemsById]);
   const itemCount = useMemo(
-    () => Object.values(itemsById).reduce((acc, line) => acc + line.qty, 0),
-    [itemsById],
+    () => items.reduce((acc, line) => acc + line.qty, 0),
+    [items],
+  );
+  const subtotal = useMemo(
+    () => items.reduce((sum, l) => sum + l.price * l.qty, 0),
+    [items],
   );
 
   const [activeSectionId, setActiveSectionId] = useState<string>(
@@ -42,7 +47,7 @@ export function HomeMenuClient({ sections }: { sections: SectionBlock[] }) {
       },
       {
         root: null,
-        rootMargin: "-88px 0px -52% 0px",
+        rootMargin: "-100px 0px -52% 0px",
         threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
       },
     );
@@ -52,12 +57,16 @@ export function HomeMenuClient({ sections }: { sections: SectionBlock[] }) {
   }, [sections]);
 
   const navSections = useMemo(
-    () => sections.map(({ section }) => ({ id: section.id, title: section.title })),
+    () =>
+      sections.map(({ section }) => ({
+        id: section.id,
+        title: section.navLabel,
+      })),
     [sections],
   );
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md bg-background pb-28">
+    <div className="mx-auto min-h-screen w-full max-w-md bg-[#fdfcf8] pb-24">
       <Header
         sections={navSections}
         activeSectionId={activeSectionId}
@@ -70,9 +79,9 @@ export function HomeMenuClient({ sections }: { sections: SectionBlock[] }) {
             key={section.id}
             id={`menu-section-${section.id}`}
             data-section-id={section.id}
-            className="scroll-mt-[7.5rem] space-y-3"
+            className="scroll-mt-[8.5rem] space-y-3"
           >
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <h2 className="text-lg font-bold tracking-tight text-zinc-900 sm:text-xl">
               {section.title}
             </h2>
             {products.map((product) => (
@@ -82,20 +91,35 @@ export function HomeMenuClient({ sections }: { sections: SectionBlock[] }) {
         ))}
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-md px-4 pb-4">
-        <button
-          type="button"
-          onClick={() => useCartStore.getState().openCart()}
-          className="mx-auto flex h-14 w-full max-w-[220px] items-center justify-center gap-2 rounded-2xl bg-accent text-lg font-extrabold text-white shadow-xl active:scale-[0.99]"
-        >
-          <ShoppingCart className="size-5" />
-          Carrito
-          {itemCount > 0 ? (
-            <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-accent">
-              {itemCount}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/25 bg-[#FF5700] shadow-[0_-8px_24px_rgba(0,0,0,0.12)]">
+        <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => useCartStore.getState().openCart()}
+            className="min-h-12 flex-1 rounded-xl bg-white/15 px-4 text-left text-sm font-bold text-white ring-1 ring-white/30 backdrop-blur-sm active:scale-[0.99]"
+          >
+            <span className="block text-[11px] font-semibold uppercase tracking-wider text-white/90">
+              Ver pedido
             </span>
-          ) : null}
-        </button>
+            {itemCount > 0 ? (
+              <span className="text-xs font-medium text-white/85">
+                {itemCount} {itemCount === 1 ? "artículo" : "artículos"}
+              </span>
+            ) : (
+              <span className="text-xs font-medium text-white/75">
+                Carrito vacío
+              </span>
+            )}
+          </button>
+          <div className="shrink-0 text-right">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-white/80">
+              Total
+            </div>
+            <div className="text-lg font-extrabold tabular-nums text-white">
+              {formatCurrencyMXN(subtotal)}
+            </div>
+          </div>
+        </div>
       </div>
 
       <CartSidebar />

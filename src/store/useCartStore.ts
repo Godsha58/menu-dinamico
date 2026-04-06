@@ -3,10 +3,13 @@ import { persist } from "zustand/middleware";
 import type { MenuProduct } from "@/data/menu";
 
 export type CartLine = {
+  lineId: string;
   productId: string;
   name: string;
   price: number;
   qty: number;
+  /** `true` con verdura, `false` sin; `null` en extras */
+  withVegetables: boolean | null;
 };
 
 export type Receipt = {
@@ -16,6 +19,26 @@ export type Receipt = {
   paidAtIso: string;
   method: "tarjeta" | "paypal";
 };
+
+function lineIdFor(product: MenuProduct, withVegetables?: boolean) {
+  if (product.requiresVegetableOption) {
+    const v = withVegetables ?? true;
+    return `${product.id}__${v ? "veg" : "noveg"}`;
+  }
+  return product.id;
+}
+
+function displayNameForLine(
+  product: MenuProduct,
+  withVegetables: boolean | null,
+): string {
+  if (!product.requiresVegetableOption || withVegetables === null) {
+    return product.name;
+  }
+  return withVegetables
+    ? `${product.name} (Con verdura)`
+    : `${product.name} (Sin verdura)`;
+}
 
 type CartState = {
   isCartOpen: boolean;
@@ -30,10 +53,10 @@ type CartState = {
   goToCheckout: () => void;
   setPaymentMethod: (m: "tarjeta" | "paypal") => void;
 
-  add: (product: MenuProduct) => void;
-  inc: (productId: string) => void;
-  dec: (productId: string) => void;
-  remove: (productId: string) => void;
+  add: (product: MenuProduct, withVegetables?: boolean) => void;
+  inc: (lineId: string) => void;
+  dec: (lineId: string) => void;
+  remove: (lineId: string) => void;
   clearCart: () => void;
   clearAll: () => void;
 
@@ -45,10 +68,9 @@ function calcTotal(lines: CartLine[]) {
   return lines.reduce((sum, l) => sum + l.price * l.qty, 0);
 }
 
-function randomOrderId() {
-  const now = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).slice(2, 7).toUpperCase();
-  return `ORD-${now}-${rand}`;
+function randomHakunaOrderId() {
+  const n = 100 + Math.floor(Math.random() * 900);
+  return `HK-${n}`;
 }
 
 export const useCartStore = create<CartState>()(
@@ -66,51 +88,60 @@ export const useCartStore = create<CartState>()(
       goToCheckout: () => set({ step: "checkout" }),
       setPaymentMethod: (m) => set({ paymentMethod: m }),
 
-      add: (product) =>
+      add: (product, withVegetables) =>
         set((s) => {
-          const existing = s.itemsById[product.id];
+          const veg: boolean | null = product.requiresVegetableOption
+            ? (withVegetables ?? true)
+            : null;
+          const lineId = lineIdFor(
+            product,
+            veg === null ? undefined : veg,
+          );
+          const existing = s.itemsById[lineId];
           const next: Record<string, CartLine> = { ...s.itemsById };
           if (existing) {
-            next[product.id] = { ...existing, qty: existing.qty + 1 };
+            next[lineId] = { ...existing, qty: existing.qty + 1 };
           } else {
-            next[product.id] = {
+            next[lineId] = {
+              lineId,
               productId: product.id,
-              name: product.name,
+              name: displayNameForLine(product, veg),
               price: product.price,
               qty: 1,
+              withVegetables: veg,
             };
           }
           return { itemsById: next, isCartOpen: true };
         }),
 
-      inc: (productId) =>
+      inc: (lineId) =>
         set((s) => {
-          const existing = s.itemsById[productId];
+          const existing = s.itemsById[lineId];
           if (!existing) return s;
           return {
             itemsById: {
               ...s.itemsById,
-              [productId]: { ...existing, qty: existing.qty + 1 },
+              [lineId]: { ...existing, qty: existing.qty + 1 },
             },
           };
         }),
 
-      dec: (productId) =>
+      dec: (lineId) =>
         set((s) => {
-          const existing = s.itemsById[productId];
+          const existing = s.itemsById[lineId];
           if (!existing) return s;
           const next = { ...s.itemsById };
           const qty = existing.qty - 1;
-          if (qty <= 0) delete next[productId];
-          else next[productId] = { ...existing, qty };
+          if (qty <= 0) delete next[lineId];
+          else next[lineId] = { ...existing, qty };
           return { itemsById: next };
         }),
 
-      remove: (productId) =>
+      remove: (lineId) =>
         set((s) => {
-          const next = { ...s.itemsById };
-          delete next[productId];
-          return { itemsById: next };
+          const n = { ...s.itemsById };
+          delete n[lineId];
+          return { itemsById: n };
         }),
 
       clearCart: () => set({ itemsById: {}, step: "cart" }),
@@ -120,7 +151,7 @@ export const useCartStore = create<CartState>()(
         const items = Object.values(get().itemsById);
         const total = calcTotal(items);
         return {
-          orderId: randomOrderId(),
+          orderId: randomHakunaOrderId(),
           items,
           total,
           paidAtIso: new Date().toISOString(),
@@ -130,7 +161,7 @@ export const useCartStore = create<CartState>()(
       setReceipt: (receipt) => set({ lastReceipt: receipt }),
     }),
     {
-      name: "webcai-cart",
+      name: "hakuna-bolas-cart",
       skipHydration: true,
       partialize: (s) => ({
         itemsById: s.itemsById,
@@ -140,4 +171,3 @@ export const useCartStore = create<CartState>()(
     },
   ),
 );
-

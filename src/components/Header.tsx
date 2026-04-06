@@ -44,24 +44,24 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-divider bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
-      <div className="mx-auto w-full max-w-md px-4 pt-4 pb-2">
+    <header className="sticky top-0 z-40 bg-[#FF5700] shadow-sm">
+      <div className="mx-auto w-full max-w-md px-4 pt-4 pb-3">
         <div className="flex justify-center">
           <Image
-            src="/hakuna-logo.png"
+            src="/hakuna-logo.svg"
             alt="Hakuna Bolas de Arroz"
             width={220}
-            height={72}
-            className="h-11 w-auto max-w-[min(220px,78vw)] object-contain object-center"
+            height={56}
+            className="h-12 w-auto max-w-[min(220px,82vw)] object-contain object-center brightness-0 invert"
             priority
-            sizes="(max-width: 448px) 78vw, 220px"
+            sizes="(max-width: 448px) 82vw, 220px"
           />
         </div>
       </div>
 
       <div
         ref={listRef}
-        className="scrollbar-none flex gap-1 overflow-x-auto border-t border-divider px-3 py-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="scrollbar-none flex gap-1 overflow-x-auto border-t border-white/20 bg-[#FF5700] px-3 py-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="tablist"
         aria-label="Categorías del menú"
       >
@@ -78,12 +78,12 @@ export function Header({
                 else tabRefs.current.delete(s.id);
               }}
               onClick={() => handleSelect(s.id)}
-              className="relative shrink-0 px-3 py-3 text-[13px] font-medium tracking-wide text-muted transition-colors duration-200 hover:text-foreground data-[active=true]:text-foreground"
+              className="relative shrink-0 px-3 py-3 text-[12px] font-semibold tracking-wide text-white/85 transition-colors duration-200 hover:text-white data-[active=true]:text-white sm:text-[13px]"
               data-active={active}
             >
               <span className="whitespace-nowrap">{s.title}</span>
               <span
-                className="pointer-events-none absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-accent transition-opacity duration-200"
+                className="pointer-events-none absolute inset-x-2 bottom-1 h-0.5 rounded-full bg-white transition-opacity duration-200"
                 style={{ opacity: active ? 1 : 0 }}
                 aria-hidden
               />

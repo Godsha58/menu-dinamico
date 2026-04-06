@@ -10,12 +10,12 @@ import { formatCurrencyMXN } from "@/components/ui/format";
 import { FormField } from "@/components/ui/FormField";
 
 function CartRow({
-  id,
+  lineId,
   name,
   price,
   qty,
 }: {
-  id: string;
+  lineId: string;
   name: string;
   price: number;
   qty: number;
@@ -24,11 +24,11 @@ function CartRow({
     <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="truncate text-[15px] font-semibold text-zinc-900">
+          <div className="text-[15px] font-semibold leading-snug text-zinc-900">
             {name}
           </div>
           <div className="mt-1 text-sm text-zinc-500">
-            {formatCurrencyMXN(price)} · Subtotal{" "}
+            {formatCurrencyMXN(price)} c/u · Subtotal{" "}
             <span className="font-semibold text-zinc-900">
               {formatCurrencyMXN(price * qty)}
             </span>
@@ -36,7 +36,7 @@ function CartRow({
           <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => useCartStore.getState().dec(id)}
+              onClick={() => useCartStore.getState().dec(lineId)}
               className="grid size-9 place-items-center rounded-xl border border-zinc-200 bg-white text-zinc-800 active:scale-[0.98]"
               aria-label={`Disminuir ${name}`}
             >
@@ -47,7 +47,7 @@ function CartRow({
             </div>
             <button
               type="button"
-              onClick={() => useCartStore.getState().inc(id)}
+              onClick={() => useCartStore.getState().inc(lineId)}
               className="grid size-9 place-items-center rounded-xl border border-zinc-200 bg-white text-zinc-800 active:scale-[0.98]"
               aria-label={`Aumentar ${name}`}
             >
@@ -58,8 +58,8 @@ function CartRow({
 
         <button
           type="button"
-          onClick={() => useCartStore.getState().remove(id)}
-          className="grid size-10 shrink-0 place-items-center rounded-xl bg-zinc-100 text-webcai-red active:scale-[0.98]"
+          onClick={() => useCartStore.getState().remove(lineId)}
+          className="grid size-10 shrink-0 place-items-center rounded-xl bg-zinc-100 text-[#FF5700] active:scale-[0.98]"
           aria-label={`Eliminar ${name}`}
         >
           <Trash2 className="size-5" />
@@ -85,7 +85,7 @@ function PaymentMethodButton({
       className={cn(
         "flex h-12 w-full items-center justify-between rounded-2xl border px-4 text-left",
         selected
-          ? "border-webcai-red bg-webcai-red/5"
+          ? "border-[#FF5700] bg-[#FF5700]/8"
           : "border-zinc-200 bg-white",
       )}
     >
@@ -93,7 +93,7 @@ function PaymentMethodButton({
       <span
         className={cn(
           "size-4 rounded-full border",
-          selected ? "border-webcai-red bg-webcai-red" : "border-zinc-300",
+          selected ? "border-[#FF5700] bg-[#FF5700]" : "border-zinc-300",
         )}
         aria-hidden
       />
@@ -146,30 +146,30 @@ export function CartSidebar() {
     st.clearCart();
     st.closeCart();
     setIsPaying(false);
-    router.push(`/recibo/${receipt.orderId}`);
+    router.push(`/recibo/${encodeURIComponent(receipt.orderId)}`);
   }
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-40">
+    <div className="fixed inset-0 z-50">
       <button
         type="button"
-        className="absolute inset-0 bg-black/35"
+        className="absolute inset-0 bg-black/40"
         onClick={() => useCartStore.getState().closeCart()}
         aria-label="Cerrar"
       />
 
       <aside className="absolute right-0 top-0 h-full w-[92vw] max-w-md bg-zinc-50 shadow-2xl">
         <div className="flex h-full flex-col">
-          <div className="bg-white">
+          <div className="border-b border-zinc-200 bg-white">
             <div className="flex items-center justify-between px-4 pt-4">
               <div className="leading-tight">
                 <div className="text-base font-semibold text-zinc-900">
-                  Menú Digital
+                  Hakuna Bolas de Arroz
                 </div>
-                <div className="text-sm font-semibold text-webcai-red">
-                  {step === "cart" ? "Carrito" : "Metodo de Pago"}
+                <div className="text-sm font-bold text-[#FF5700]">
+                  {step === "cart" ? "Tu pedido" : "Pago simulado"}
                 </div>
               </div>
               <button
@@ -195,7 +195,7 @@ export function CartSidebar() {
             ) : (
               <div className="px-4 pb-3 pt-3">
                 <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  {items.length ? "Artículos agregados" : "Sin artículos"}
+                  {items.length ? "Resumen" : "Sin artículos"}
                 </div>
               </div>
             )}
@@ -205,8 +205,8 @@ export function CartSidebar() {
             <div className="flex-1 space-y-3 overflow-auto px-4 pb-28">
               {items.map((l) => (
                 <CartRow
-                  key={l.productId}
-                  id={l.productId}
+                  key={l.lineId}
+                  lineId={l.lineId}
                   name={l.name}
                   price={l.price}
                   qty={l.qty}
@@ -214,30 +214,43 @@ export function CartSidebar() {
               ))}
               {!items.length ? (
                 <div className="rounded-2xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
-                  Agrega productos con el botón <span className="font-bold">+</span>{" "}
-                  para comenzar.
+                  Agrega productos con el botón{" "}
+                  <span className="font-bold">+</span> para comenzar.
                 </div>
               ) : null}
             </div>
           ) : (
             <div className="flex-1 overflow-auto px-4 pb-32">
               <div className="space-y-3">
+                <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Total a pagar
+                  </div>
+                  <div className="mt-1 text-xl font-extrabold text-zinc-900">
+                    {formattedTotal}
+                  </div>
+                </div>
+
                 <PaymentMethodButton
                   title="Tarjeta"
                   selected={paymentMethod === "tarjeta"}
-                  onSelect={() => useCartStore.getState().setPaymentMethod("tarjeta")}
+                  onSelect={() =>
+                    useCartStore.getState().setPaymentMethod("tarjeta")
+                  }
                 />
                 <PaymentMethodButton
                   title="PayPal"
                   selected={paymentMethod === "paypal"}
-                  onSelect={() => useCartStore.getState().setPaymentMethod("paypal")}
+                  onSelect={() =>
+                    useCartStore.getState().setPaymentMethod("paypal")
+                  }
                 />
 
-                <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
+                <div className="mt-2 rounded-2xl border border-zinc-200 bg-white p-4">
                   <div className="text-sm font-semibold text-zinc-900">
                     {paymentMethod === "tarjeta"
-                      ? "Formulario de tarjeta"
-                      : "Formulario de paypal"}
+                      ? "Datos de tarjeta (demo)"
+                      : "Cuenta PayPal (demo)"}
                   </div>
                   <div className="mt-4 space-y-3">
                     {paymentMethod === "tarjeta" ? (
@@ -318,11 +331,11 @@ export function CartSidebar() {
                   onClick={() => useCartStore.getState().goToCheckout()}
                   disabled={!items.length}
                   className={cn(
-                    "mt-3 h-12 w-full rounded-2xl bg-webcai-red text-sm font-bold text-white shadow-sm active:scale-[0.99]",
+                    "mt-3 h-12 w-full rounded-2xl bg-[#FF5700] text-sm font-bold text-white shadow-sm active:scale-[0.99]",
                     !items.length ? "opacity-50" : "",
                   )}
                 >
-                  Pagar {formattedTotal}
+                  Ir a pago · {formattedTotal}
                 </button>
               ) : (
                 <div className="mt-3 grid gap-2">
@@ -331,8 +344,8 @@ export function CartSidebar() {
                     onClick={payNow}
                     disabled={!items.length || isPaying}
                     className={cn(
-                      "flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-webcai-red text-sm font-bold text-white shadow-sm active:scale-[0.99]",
-                      isPaying ? "opacity-80" : "",
+                      "flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#FF5700] text-sm font-bold text-white shadow-sm active:scale-[0.99]",
+                      isPaying ? "opacity-90" : "",
                     )}
                   >
                     {isPaying ? (
@@ -341,7 +354,7 @@ export function CartSidebar() {
                         Procesando…
                       </>
                     ) : (
-                      <>Pagar Ahora ({formattedTotal})</>
+                      <>Pagar {formattedTotal}</>
                     )}
                   </button>
                   <button
@@ -349,7 +362,7 @@ export function CartSidebar() {
                     onClick={() => useCartStore.getState().closeCart()}
                     className="h-12 w-full rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-900 active:scale-[0.99]"
                   >
-                    Aceptar
+                    Cerrar
                   </button>
                 </div>
               )}
@@ -360,4 +373,3 @@ export function CartSidebar() {
     </div>
   );
 }
-

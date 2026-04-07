@@ -128,6 +128,7 @@ export function CartSidebar() {
   const [cardCvv, setCardCvv] = useState("");
   const [ppAccount, setPpAccount] = useState("");
   const [ppPass, setPpPass] = useState("");
+  const [payError, setPayError] = useState("");
 
   const formattedTotal = useMemo(() => formatCurrencyMXN(total), [total]);
 
@@ -148,24 +149,28 @@ export function CartSidebar() {
     }
 
     setIsPaying(true);
+    setPayError("");
     await new Promise((r) => setTimeout(r, 2000));
-    const st = useCartStore.getState();
-    const receipt = st.createReceiptFromCart(paymentMethod, trimmedCustomerName);
-    const restaurantStore = useRestaurantStore.getState();
-    restaurantStore.setCart(receipt.items);
-    restaurantStore.addOrder({
-      id: receipt.orderId,
-      customerName: trimmedCustomerName,
-      items: receipt.items,
-      total: receipt.total,
-    });
-    restaurantStore.clearCart();
-    st.setReceipt(receipt);
-    st.clearCart();
-    st.closeCart();
-    setIsPaying(false);
-    setNameError("");
-    router.push(`/recibo/${encodeURIComponent(receipt.orderId)}`);
+    try {
+      const st = useCartStore.getState();
+      const receipt = st.createReceiptFromCart(paymentMethod, trimmedCustomerName);
+      const restaurantStore = useRestaurantStore.getState();
+      await restaurantStore.addOrder({
+        id: receipt.orderId,
+        customerName: trimmedCustomerName,
+        items: receipt.items,
+        total: receipt.total,
+      });
+      st.setReceipt(receipt);
+      st.clearCart();
+      st.closeCart();
+      setNameError("");
+      router.push(`/recibo/${encodeURIComponent(receipt.orderId)}`);
+    } catch {
+      setPayError("No se pudo registrar la orden. Intenta nuevamente.");
+    } finally {
+      setIsPaying(false);
+    }
   }
 
   if (!isOpen) return null;
@@ -403,6 +408,11 @@ export function CartSidebar() {
                       <>Pagar {formattedTotal}</>
                     )}
                   </button>
+                  {payError ? (
+                    <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-center text-xs font-medium text-red-700">
+                      {payError}
+                    </p>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => useCartStore.getState().closeCart()}

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRestaurantStore, type RestaurantOrder } from "@/store/useRestaurantStore";
 import { formatCurrencyMXN } from "@/components/ui/format";
+import { supabase } from "@/lib/supabase";
 
 const NEW_ORDER_SOUND_URL =
   "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
@@ -72,11 +73,12 @@ function OrderDetailsModal({
 export default function AdminPage() {
   const orders = useRestaurantStore((s) => s.orders);
   const completeOrder = useRestaurantStore((s) => s.completeOrder);
+  const fetchPendingOrders = useRestaurantStore((s) => s.fetchPendingOrders);
 
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [activeOrder, setActiveOrder] = useState<RestaurantOrder | null>(null);
-  const previousOrderCountRef = useRef(orders.length);
+  const [loading, setLoading] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const pendingOrders = useMemo(
@@ -96,24 +98,50 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    const previous = previousOrderCountRef.current;
-    if (orders.length > previous) {
-      const latestOrder = orders[orders.length - 1];
-      if (latestOrder) {
-        setToastMessage(`¡Nueva orden de ${latestOrder.customerName}!`);
-        window.setTimeout(() => setToastMessage(""), 3000);
-      }
-      if (soundEnabled && audioRef.current) {
-        void audioRef.current
-          .play()
-          .then(() => {
-            if (audioRef.current) audioRef.current.currentTime = 0;
-          })
-          .catch(() => undefined);
+    async function load() {
+      try {
+        await fetchPendingOrders();
+      } finally {
+        setLoading(false);
       }
     }
-    previousOrderCountRef.current = orders.length;
-  }, [orders, soundEnabled]);
+
+    void load();
+  }, [fetchPendingOrders]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-orders")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "orders",
+        },
+        async (payload) => {
+          const customerName = String(payload.new.customer_name ?? "nuevo cliente");
+          setToastMessage(`¡Nueva orden de ${customerName}!`);
+          window.setTimeout(() => setToastMessage(""), 3000);
+
+          if (soundEnabled && audioRef.current) {
+            void audioRef.current
+              .play()
+              .then(() => {
+                if (audioRef.current) audioRef.current.currentTime = 0;
+              })
+              .catch(() => undefined);
+          }
+
+          await fetchPendingOrders();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [fetchPendingOrders, soundEnabled]);
 
   async function enableSound() {
     if (!audioRef.current) audioRef.current = new Audio(NEW_ORDER_SOUND_URL);
@@ -125,6 +153,10 @@ export default function AdminPage() {
     } catch {
       setSoundEnabled(false);
     }
+  }
+
+  async function onCompleteOrder(orderId: string) {
+    await completeOrder(orderId);
   }
 
   return (
@@ -160,7 +192,11 @@ export default function AdminPage() {
           <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">
             Pendientes ({pendingOrders.length})
           </h2>
-          {pendingOrders.length ? (
+          {loading ? (
+            <div className="rounded-2xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
+              Cargando órdenes...
+            </div>
+          ) : pendingOrders.length ? (
             pendingOrders.map((order) => (
               <article
                 key={order.id}
@@ -192,7 +228,7 @@ export default function AdminPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => completeOrder(order.id)}
+                    onClick={() => void onCompleteOrder(order.id)}
                     className="h-10 rounded-xl bg-[#FF5700] text-sm font-bold text-white"
                   >
                     Dar salida

@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { CartLine } from "@/store/useCartStore";
+import { supabase } from "@/lib/supabase";
 
 export type RestaurantOrder = {
   id: string;
@@ -12,46 +12,128 @@ export type RestaurantOrder = {
 };
 
 type RestaurantState = {
-  cart: CartLine[];
   orders: RestaurantOrder[];
-  setCart: (items: CartLine[]) => void;
-  addOrder: (order: Omit<RestaurantOrder, "status" | "createdAt">) => void;
-  completeOrder: (orderId: string) => void;
-  clearCart: () => void;
+  addOrder: (
+    order: Omit<RestaurantOrder, "status" | "createdAt">,
+  ) => Promise<void>;
+  fetchPendingOrders: () => Promise<void>;
+  completeOrder: (orderId: string) => Promise<void>;
 };
 
-export const useRestaurantStore = create<RestaurantState>()(
-  persist(
-    (set) => ({
-      cart: [],
-      orders: [],
-      setCart: (items) => set({ cart: items }),
-      addOrder: (order) =>
-        set((s) => ({
-          orders: [
-            ...s.orders,
-            {
-              ...order,
-              status: "pendiente",
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        })),
-      completeOrder: (orderId) =>
-        set((s) => ({
-          orders: s.orders.map((o) =>
-            o.id === orderId ? { ...o, status: "entregado" } : o,
-          ),
-        })),
-      clearCart: () => set({ cart: [] }),
-    }),
-    {
-      name: "hakuna-restaurant-store",
-      skipHydration: true,
-      partialize: (s) => ({
-        cart: s.cart,
-        orders: s.orders,
-      }),
-    },
-  ),
-);
+type OrderItemRow = {
+  product_id: string;
+  product_name: string;
+  unit_price: number;
+  quantity: number;
+  con_verdura: boolean | null;
+};
+
+type OrderRow = {
+  id: string;
+  ticket_id: string | null;
+  customer_name: string;
+  total: number;
+  status: "pendiente" | "entregado";
+  created_at: string;
+  order_items?: OrderItemRow[] | null;
+};
+
+function mapDbOrder(row: OrderRow): RestaurantOrder {
+  const items = (row.order_items ?? []).map((item, index) => ({
+    lineId: `${item.product_id}-${index}`,
+    productId: item.product_id,
+    name: item.product_name,
+    price: item.unit_price,
+    qty: item.quantity,
+    withVegetables: item.con_verdura,
+  }));
+
+  return {
+    id: row.ticket_id ?? row.id,
+    customerName: row.customer_name,
+    items,
+    total: row.total,
+    status: row.status,
+    createdAt: row.created_at,
+  };
+}
+
+export const useRestaurantStore = create<RestaurantState>()((set) => ({
+  orders: [],
+  addOrder: async (order) => {
+    const { data: insertedOrder, error: orderError } = await supabase
+      .from("orders")
+      .insert({
+        ticket_id: order.id,
+        customer_name: order.customerName,
+        total: order.total,
+        status: "pendiente",
+      })
+      .select("id, ticket_id, customer_name, total, status, created_at")
+      .single();
+
+    if (orderError || !insertedOrder) {
+      throw new Error(orderError?.message ?? "No se pudo crear la orden.");
+    }
+
+    const itemPayload = order.items.map((item) => ({
+      order_id: insertedOrder.id,
+      product_id: item.productId,
+      product_name: item.name,
+      unit_price: item.price,
+      quantity: item.qty,
+      con_verdura: item.withVegetables,
+    }));
+
+    const { error: itemsError } = await supabase.from("order_items").insert(itemPayload);
+
+    if (itemsError) {
+      throw new Error(itemsError.message);
+    }
+
+    set((s) => ({
+      orders: [
+        ...s.orders,
+        {
+          ...order,
+          status: "pendiente",
+          createdAt: insertedOrder.created_at,
+        },
+      ],
+    }));
+  },
+  fetchPendingOrders: async () => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(
+        "id, ticket_id, customer_name, total, status, created_at, order_items(product_id, product_name, unit_price, quantity, con_verdura)",
+      )
+      .eq("status", "pendiente")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const mapped = (data ?? []).map((row) => mapDbOrder(row as OrderRow));
+    set((s) => ({
+      orders: [...mapped, ...s.orders.filter((o) => o.status === "entregado")],
+    }));
+  },
+  completeOrder: async (orderId) => {
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "entregado" })
+      .eq("ticket_id", orderId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    set((s) => ({
+      orders: s.orders.map((o) =>
+        o.id === orderId ? { ...o, status: "entregado" } : o,
+      ),
+    }));
+  },
+}));

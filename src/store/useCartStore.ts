@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { MenuProduct } from "@/data/menu";
 
 export type CartLine = {
@@ -77,102 +76,89 @@ function randomHakunaOrderId() {
   return `HK-${n}`;
 }
 
-export const useCartStore = create<CartState>()(
-  persist(
-    (set, get) => ({
-      isCartOpen: false,
-      step: "cart",
-      paymentMethod: "tarjeta",
-      itemsById: {},
-      lastReceipt: null,
+export const useCartStore = create<CartState>()((set, get) => ({
+  isCartOpen: false,
+  step: "cart",
+  paymentMethod: "tarjeta",
+  itemsById: {},
+  lastReceipt: null,
 
-      openCart: () => set({ isCartOpen: true }),
-      closeCart: () => set({ isCartOpen: false, step: "cart" }),
-      goToCart: () => set({ step: "cart" }),
-      goToCheckout: () => set({ step: "checkout" }),
-      setPaymentMethod: (m) => set({ paymentMethod: m }),
+  openCart: () => set({ isCartOpen: true }),
+  closeCart: () => set({ isCartOpen: false, step: "cart" }),
+  goToCart: () => set({ step: "cart" }),
+  goToCheckout: () => set({ step: "checkout" }),
+  setPaymentMethod: (m) => set({ paymentMethod: m }),
 
-      add: (product, withVegetables) =>
-        set((s) => {
-          const veg: boolean | null = product.requiresVegetableOption
-            ? (withVegetables ?? true)
-            : null;
-          const lineId = lineIdFor(
-            product,
-            veg === null ? undefined : veg,
-          );
-          const existing = s.itemsById[lineId];
-          const next: Record<string, CartLine> = { ...s.itemsById };
-          if (existing) {
-            next[lineId] = { ...existing, qty: existing.qty + 1 };
-          } else {
-            next[lineId] = {
-              lineId,
-              productId: product.id,
-              name: displayNameForLine(product, veg),
-              price: product.price,
-              qty: 1,
-              withVegetables: veg,
-            };
-          }
-          return { itemsById: next, isCartOpen: true };
-        }),
-
-      inc: (lineId) =>
-        set((s) => {
-          const existing = s.itemsById[lineId];
-          if (!existing) return s;
-          return {
-            itemsById: {
-              ...s.itemsById,
-              [lineId]: { ...existing, qty: existing.qty + 1 },
-            },
-          };
-        }),
-
-      dec: (lineId) =>
-        set((s) => {
-          const existing = s.itemsById[lineId];
-          if (!existing) return s;
-          const next = { ...s.itemsById };
-          const qty = existing.qty - 1;
-          if (qty <= 0) delete next[lineId];
-          else next[lineId] = { ...existing, qty };
-          return { itemsById: next };
-        }),
-
-      remove: (lineId) =>
-        set((s) => {
-          const n = { ...s.itemsById };
-          delete n[lineId];
-          return { itemsById: n };
-        }),
-
-      clearCart: () => set({ itemsById: {}, step: "cart" }),
-      clearAll: () => set({ itemsById: {}, step: "cart", lastReceipt: null }),
-
-      createReceiptFromCart: (method, customerName) => {
-        const items = Object.values(get().itemsById);
-        const total = calcTotal(items);
-        return {
-          orderId: randomHakunaOrderId(),
-          customerName,
-          items,
-          total,
-          paidAtIso: new Date().toISOString(),
-          method,
+  add: (product, withVegetables) =>
+    set((s) => {
+      const veg: boolean | null = product.requiresVegetableOption
+        ? (withVegetables ?? true)
+        : null;
+      const lineId = lineIdFor(
+        product,
+        veg === null ? undefined : veg,
+      );
+      const existing = s.itemsById[lineId];
+      const next: Record<string, CartLine> = { ...s.itemsById };
+      if (existing) {
+        next[lineId] = { ...existing, qty: existing.qty + 1 };
+      } else {
+        next[lineId] = {
+          lineId,
+          productId: product.id,
+          name: displayNameForLine(product, veg),
+          price: product.price,
+          qty: 1,
+          withVegetables: veg,
         };
-      },
-      setReceipt: (receipt) => set({ lastReceipt: receipt }),
+      }
+      return { itemsById: next, isCartOpen: true };
     }),
-    {
-      name: "hakuna-bolas-cart",
-      skipHydration: true,
-      partialize: (s) => ({
-        itemsById: s.itemsById,
-        lastReceipt: s.lastReceipt,
-        paymentMethod: s.paymentMethod,
-      }),
-    },
-  ),
-);
+
+  inc: (lineId) =>
+    set((s) => {
+      const existing = s.itemsById[lineId];
+      if (!existing) return s;
+      return {
+        itemsById: {
+          ...s.itemsById,
+          [lineId]: { ...existing, qty: existing.qty + 1 },
+        },
+      };
+    }),
+
+  dec: (lineId) =>
+    set((s) => {
+      const existing = s.itemsById[lineId];
+      if (!existing) return s;
+      const next = { ...s.itemsById };
+      const qty = existing.qty - 1;
+      if (qty <= 0) delete next[lineId];
+      else next[lineId] = { ...existing, qty };
+      return { itemsById: next };
+    }),
+
+  remove: (lineId) =>
+    set((s) => {
+      const n = { ...s.itemsById };
+      delete n[lineId];
+      return { itemsById: n };
+    }),
+
+  clearCart: () => set({ itemsById: {}, step: "cart" }),
+  clearAll: () => set({ itemsById: {}, step: "cart", lastReceipt: null }),
+
+  createReceiptFromCart: (method, customerName) => {
+    const items = Object.values(get().itemsById);
+    const total = calcTotal(items);
+    return {
+      orderId: randomHakunaOrderId(),
+      customerName,
+      items,
+      total,
+      paidAtIso: new Date().toISOString(),
+      method,
+    };
+  },
+  setReceipt: (receipt) => set({ lastReceipt: receipt }),
+}));

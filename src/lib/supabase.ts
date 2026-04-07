@@ -8,6 +8,21 @@ function readEnv() {
 
 const { url, anonKey } = readEnv();
 
+if (typeof window !== "undefined") {
+  console.log("--- DIAGNÓSTICO SUPABASE ---");
+  console.log(
+    "URL detectada:",
+    url ? `SÍ (empieza con ${url.substring(0, 10)})` : "NO",
+  );
+  console.log(
+    "Key detectada:",
+    anonKey ? `SÍ (longitud: ${anonKey.length})` : "NO",
+  );
+  if (anonKey.includes('"')) {
+    console.error("¡ERROR: La llave tiene comillas!");
+  }
+}
+
 const PLACEHOLDER_URL = "https://placeholder.supabase.co";
 const PLACEHOLDER_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.placeholder";

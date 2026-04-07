@@ -240,7 +240,7 @@ export default function AdminPage() {
       </main>
 
       <footer className="mx-4 mt-8 border-t border-zinc-200 pt-4 text-center text-sm text-zinc-600">
-        Las bolas están bañadas con salsa de anguila y chipotle.
+        Recuerda sonreír!
       </footer>
 
       {activeOrder ? (

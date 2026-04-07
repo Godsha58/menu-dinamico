@@ -375,6 +375,16 @@ export function CartSidebar() {
                 </button>
               ) : (
                 <div className="mt-3 grid gap-2">
+                  {!customerName.trim() && !isPaying ? (
+                    <p
+                      role="status"
+                      className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs font-medium leading-snug text-amber-950"
+                    >
+                      No se puede procesar el pago sin el{" "}
+                      <span className="font-bold">nombre del cliente</span>.
+                      Escríbelo en el campo de arriba para continuar.
+                    </p>
+                  ) : null}
                   <button
                     type="button"
                     onClick={payNow}

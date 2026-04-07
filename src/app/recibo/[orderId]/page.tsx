@@ -42,6 +42,14 @@ export default function ReceiptPage() {
           <div className="mt-1 font-mono text-xl font-bold tracking-tight text-zinc-900">
             {displayOrder || "#HK-—"}
           </div>
+          {receipt?.customerName ? (
+            <div className="mt-2 text-sm text-zinc-700">
+              Cliente:{" "}
+              <span className="font-semibold text-zinc-900">
+                {receipt.customerName}
+              </span>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-5 space-y-2">

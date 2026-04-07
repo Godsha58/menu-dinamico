@@ -14,6 +14,7 @@ export type CartLine = {
 
 export type Receipt = {
   orderId: string;
+  customerName: string;
   items: CartLine[];
   total: number;
   paidAtIso: string;
@@ -60,7 +61,10 @@ type CartState = {
   clearCart: () => void;
   clearAll: () => void;
 
-  createReceiptFromCart: (method: "tarjeta" | "paypal") => Receipt;
+  createReceiptFromCart: (
+    method: "tarjeta" | "paypal",
+    customerName: string,
+  ) => Receipt;
   setReceipt: (receipt: Receipt) => void;
 };
 
@@ -147,11 +151,12 @@ export const useCartStore = create<CartState>()(
       clearCart: () => set({ itemsById: {}, step: "cart" }),
       clearAll: () => set({ itemsById: {}, step: "cart", lastReceipt: null }),
 
-      createReceiptFromCart: (method) => {
+      createReceiptFromCart: (method, customerName) => {
         const items = Object.values(get().itemsById);
         const total = calcTotal(items);
         return {
           orderId: randomHakunaOrderId(),
+          customerName,
           items,
           total,
           paidAtIso: new Date().toISOString(),

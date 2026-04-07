@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CreditCard, Loader2, Trash2, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useCartStore } from "@/store/useCartStore";
+import { useRestaurantStore } from "@/store/useRestaurantStore";
 import { cn } from "@/components/ui/cn";
 import { formatCurrencyMXN } from "@/components/ui/format";
 import { FormField } from "@/components/ui/FormField";
@@ -119,6 +120,8 @@ export function CartSidebar() {
   );
 
   const [isPaying, setIsPaying] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [nameError, setNameError] = useState("");
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExp, setCardExp] = useState("");
@@ -138,14 +141,30 @@ export function CartSidebar() {
 
   async function payNow() {
     if (!items.length || isPaying) return;
+    const trimmedCustomerName = customerName.trim();
+    if (!trimmedCustomerName) {
+      setNameError("El nombre del cliente es obligatorio.");
+      return;
+    }
+
     setIsPaying(true);
     await new Promise((r) => setTimeout(r, 2000));
     const st = useCartStore.getState();
-    const receipt = st.createReceiptFromCart(paymentMethod);
+    const receipt = st.createReceiptFromCart(paymentMethod, trimmedCustomerName);
+    const restaurantStore = useRestaurantStore.getState();
+    restaurantStore.setCart(receipt.items);
+    restaurantStore.addOrder({
+      id: receipt.orderId,
+      customerName: trimmedCustomerName,
+      items: receipt.items,
+      total: receipt.total,
+    });
+    restaurantStore.clearCart();
     st.setReceipt(receipt);
     st.clearCart();
     st.closeCart();
     setIsPaying(false);
+    setNameError("");
     router.push(`/recibo/${encodeURIComponent(receipt.orderId)}`);
   }
 
@@ -229,6 +248,23 @@ export function CartSidebar() {
                   <div className="mt-1 text-xl font-extrabold text-zinc-900">
                     {formattedTotal}
                   </div>
+                </div>
+                <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+                  <FormField
+                    label="Nombre del cliente"
+                    placeholder="Ej. Daniel"
+                    autoComplete="name"
+                    value={customerName}
+                    onChange={(v) => {
+                      setCustomerName(v);
+                      if (nameError) setNameError("");
+                    }}
+                  />
+                  {nameError ? (
+                    <p className="mt-2 text-xs font-medium text-red-600">
+                      {nameError}
+                    </p>
+                  ) : null}
                 </div>
 
                 <PaymentMethodButton
@@ -342,10 +378,10 @@ export function CartSidebar() {
                   <button
                     type="button"
                     onClick={payNow}
-                    disabled={!items.length || isPaying}
+                    disabled={!items.length || isPaying || !customerName.trim()}
                     className={cn(
                       "flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#FF5700] text-sm font-bold text-white shadow-sm active:scale-[0.99]",
-                      isPaying ? "opacity-90" : "",
+                      isPaying || !customerName.trim() ? "opacity-90" : "",
                     )}
                   >
                     {isPaying ? (

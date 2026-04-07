@@ -72,8 +72,9 @@ function calcTotal(lines: CartLine[]) {
 }
 
 function randomHakunaOrderId() {
-  const n = 100 + Math.floor(Math.random() * 900);
-  return `HK-${n}`;
+  const ts = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `HK-${ts}-${rand}`;
 }
 
 export const useCartStore = create<CartState>()((set, get) => ({

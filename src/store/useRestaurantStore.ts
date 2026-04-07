@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { CartLine } from "@/store/useCartStore";
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 export type RestaurantOrder = {
   id: string;
@@ -60,6 +60,12 @@ function mapDbOrder(row: OrderRow): RestaurantOrder {
 export const useRestaurantStore = create<RestaurantState>()((set) => ({
   orders: [],
   addOrder: async (order) => {
+    if (!isSupabaseConfigured()) {
+      throw new Error(
+        "Supabase no está configurado: define NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+      );
+    }
+
     const { data: insertedOrder, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -101,6 +107,12 @@ export const useRestaurantStore = create<RestaurantState>()((set) => ({
     }));
   },
   fetchPendingOrders: async () => {
+    if (!isSupabaseConfigured()) {
+      throw new Error(
+        "Supabase no está configurado: define NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+      );
+    }
+
     const { data, error } = await supabase
       .from("orders")
       .select(
@@ -119,6 +131,12 @@ export const useRestaurantStore = create<RestaurantState>()((set) => ({
     }));
   },
   completeOrder: async (orderId) => {
+    if (!isSupabaseConfigured()) {
+      throw new Error(
+        "Supabase no está configurado: define NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+      );
+    }
+
     const { error } = await supabase
       .from("orders")
       .update({ status: "entregado" })

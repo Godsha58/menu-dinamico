@@ -1,10 +1,13 @@
 "use client";
 
+/* Route segment: `export const dynamic = "force-dynamic"` está en `admin/layout.tsx`
+   porque este archivo es Client Component y Next no aplica ahí la config de segmento. */
+
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRestaurantStore, type RestaurantOrder } from "@/store/useRestaurantStore";
 import { formatCurrencyMXN } from "@/components/ui/format";
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 const NEW_ORDER_SOUND_URL =
   "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
@@ -112,6 +115,13 @@ export default function AdminPage() {
   }, [fetchPendingOrders]);
 
   useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      console.warn(
+        "[admin] Supabase no configurado: omite realtime hasta definir NEXT_PUBLIC_* en build.",
+      );
+      return;
+    }
+
     const channel = supabase
       .channel("admin-orders")
       .on(

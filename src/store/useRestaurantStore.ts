@@ -21,9 +21,8 @@ type RestaurantState = {
 };
 
 type OrderItemRow = {
-  product_id: string;
   product_name: string;
-  unit_price: number;
+  price: number;
   quantity: number;
   con_verdura: boolean | null;
 };
@@ -40,10 +39,10 @@ type OrderRow = {
 
 function mapDbOrder(row: OrderRow): RestaurantOrder {
   const items = (row.order_items ?? []).map((item, index) => ({
-    lineId: `${item.product_id}-${index}`,
-    productId: item.product_id,
+    lineId: `${row.ticket_id ?? row.id}-item-${index}`,
+    productId: `${row.ticket_id ?? row.id}-item-${index}`,
     name: item.product_name,
-    price: item.unit_price,
+    price: item.price,
     qty: item.quantity,
     withVegetables: item.con_verdura,
   }));
@@ -78,9 +77,8 @@ export const useRestaurantStore = create<RestaurantState>()((set) => ({
 
     const itemPayload = order.items.map((item) => ({
       order_id: insertedOrder.id,
-      product_id: item.productId,
       product_name: item.name,
-      unit_price: item.price,
+      price: item.price,
       quantity: item.qty,
       con_verdura: item.withVegetables,
     }));
@@ -106,7 +104,7 @@ export const useRestaurantStore = create<RestaurantState>()((set) => ({
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, ticket_id, customer_name, total, status, created_at, order_items(product_id, product_name, unit_price, quantity, con_verdura)",
+        "id, ticket_id, customer_name, total, status, created_at, order_items(product_name, price, quantity, con_verdura)",
       )
       .eq("status", "pendiente")
       .order("created_at", { ascending: true });

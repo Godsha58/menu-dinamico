@@ -101,6 +101,8 @@ export default function AdminPage() {
     async function load() {
       try {
         await fetchPendingOrders();
+      } catch (error) {
+        console.error("[admin:fetchPendingOrders] Supabase error:", error);
       } finally {
         setLoading(false);
       }
@@ -133,7 +135,11 @@ export default function AdminPage() {
               .catch(() => undefined);
           }
 
-          await fetchPendingOrders();
+          try {
+            await fetchPendingOrders();
+          } catch (error) {
+            console.error("[admin:realtime:fetchPendingOrders] Supabase error:", error);
+          }
         },
       )
       .subscribe();
@@ -156,7 +162,11 @@ export default function AdminPage() {
   }
 
   async function onCompleteOrder(orderId: string) {
-    await completeOrder(orderId);
+    try {
+      await completeOrder(orderId);
+    } catch (error) {
+      console.error("[admin:completeOrder] Supabase error:", error);
+    }
   }
 
   return (

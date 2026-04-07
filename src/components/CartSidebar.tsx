@@ -166,8 +166,10 @@ export function CartSidebar() {
       st.closeCart();
       setNameError("");
       router.push(`/recibo/${encodeURIComponent(receipt.orderId)}`);
-    } catch {
-      setPayError("No se pudo registrar la orden. Intenta nuevamente.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      console.error("[checkout:addOrder] Supabase error:", error);
+      setPayError(`No se pudo registrar la orden: ${message}`);
     } finally {
       setIsPaying(false);
     }
